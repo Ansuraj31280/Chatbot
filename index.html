@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .chat-container { width: 300px; margin: 0 auto; }
+        .messages { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; }
+        .input { width: calc(100% - 22px); padding: 10px; margin-top: 10px; }
+        .message { margin: 5px 0; }
+        .user { color: blue; }
+        .bot { color: green; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="messages" id="messages"></div>
+        <input type="text" id="input" class="input" placeholder="Type your message...">
+        <button id="send-button">Send</button>
+        <input type="text" id="feedback-input" class="input" placeholder="Provide feedback...">
+        <button id="feedback-button">Send Feedback</button>
+    </div>
+    <script>
+        const inputElement = document.getElementById('input');
+        const messagesElement = document.getElementById('messages');
+        const sendButton = document.getElementById('send-button');
+        const feedbackInputElement = document.getElementById('feedback-input');
+        const feedbackButton = document.getElementById('feedback-button');
+        let lastUserInput = '';
+        let lastBotResponse = '';
+
+        sendButton.addEventListener('click', function() {
+            const userMessage = inputElement.value;
+            lastUserInput = userMessage;
+            inputElement.value = '';
+            appendMessage('user', userMessage);
+
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: userMessage }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                lastBotResponse = data.response;
+                appendMessage('bot', data.response);
+            });
+        });
+
+        feedbackButton.addEventListener('click', function() {
+            const feedback = feedbackInputElement.value;
+            feedbackInputElement.value = '';
+
+            fetch('/feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_input: lastUserInput,
+                    bot_response: lastBotResponse,
+                    feedback: feedback
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                appendMessage('bot', data.response);
+            });
+        });
+
+        function appendMessage(sender, message) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', sender);
+            messageElement.textContent = message;
+            messagesElement.appendChild(messageElement);
+            messagesElement.scrollTop = messagesElement.scrollHeight;
+        }
+    </script>
+</body>
+</html>
